@@ -1,0 +1,87 @@
+const canvSize = 175;
+const canvTextSize = 56;
+const canvas = new DrawContext();
+canvas.opaque = false;
+const screenCircleRemainColor = new Color('#FFFFFF'); //Battery remaining color
+const screenCircleDepletedColor = new Color('#FFFFFF20'); //Battery depleted color
+const screenCircleBGColor = new Color('#FFFFFF00'); //Widget background color
+const screenCircleTextColor = new Color('#ffffff'); //Widget text color (use same color as above to hide text)
+
+
+const remainColor = new Color('#FFFFFF')
+const canvWidth = 12; //Battery circle thickness
+const canvRadius = 75; //Battery circle radius
+canvas.size = new Size(canvSize, canvSize);
+canvas.respectScreenScale = true;
+
+const currentVol = Device.volume()
+
+
+/*
+BEGIN Widget Layout
+*/
+
+let widget = new ListWidget();
+
+
+stack1 = widget.addStack()
+stack1.layoutHorizontally()
+
+drawArc(
+  Math.floor(currentVol * 100 * 3.6),
+  screenCircleRemainColor,
+  screenCircleDepletedColor,
+  Math.floor(currentVol * 100).toString() + "%",
+  screenCircleTextColor
+)
+
+stack1.addImage(canvas.getImage())
+
+
+function sinDeg(deg) {
+  return Math.sin((deg * Math.PI) / 180);
+}
+
+function cosDeg(deg) {
+  return Math.cos((deg * Math.PI) / 180);
+}
+
+function drawArc(deg, fillColor, strokeColor, text, txtColor) {
+  let ctr = new Point(canvSize / 2, canvSize / 2),
+  bgx = ctr.x - canvRadius;
+  bgy = ctr.y - canvRadius;
+  bgd = 2 * canvRadius;
+  bgr = new Rect(bgx, bgy, bgd, bgd);
+
+  canvas.setFillColor(fillColor);
+  canvas.setStrokeColor(strokeColor);
+  canvas.setLineWidth(canvWidth);
+  canvas.strokeEllipse(bgr);
+
+  for (t = 0; t < deg; t++) {
+    rect_x = ctr.x + canvRadius * sinDeg(t) - canvWidth / 2;
+    rect_y = ctr.y - canvRadius * cosDeg(t) - canvWidth / 2;
+    rect_r = new Rect(rect_x, rect_y, canvWidth, canvWidth);
+    canvas.fillEllipse(rect_r);
+  }
+  // attempt to draw info text
+  const canvTextRect = new Rect(
+    0,
+    63 - canvTextSize / 7,
+    canvSize,
+    canvTextSize
+  );
+  canvas.setTextAlignedCenter();
+  canvas.setTextColor(txtColor);
+  canvas.setFont(Font.lightSystemFont(canvTextSize));
+  canvas.drawTextInRect(text, canvTextRect);
+
+  // return canvas.getImage()
+}
+
+const nobg = importModule('no-background.js')
+widget.backgroundImage = await nobg.getSlice('medium-top')
+
+Script.setWidget(widget);
+widget.presentSmall();
+Script.complete();
